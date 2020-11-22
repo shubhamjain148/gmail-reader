@@ -11,4 +11,6 @@ RUN npm install && \
     npm prune --production && \
     npm install -g serve
 
+EXPOSE 5000
+
 CMD ["serve", "-s", "build"]

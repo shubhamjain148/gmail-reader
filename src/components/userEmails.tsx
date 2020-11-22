@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { GoogleUser } from './googleLogin';
 import { RenderEmail } from './renderEmails';
 import styled from 'styled-components';
+import { ArrowRightOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { getUserEmails, getEmail } from '../service/emailService';
 
-declare const window: any;
 
 const EmailsContainer = styled.div`
     width: 100%;
@@ -14,8 +15,21 @@ const EmailsContainer = styled.div`
 `;
 
 const EmailListContainer = styled.div`
+    margin: 10px;
+`;
+
+const EmailPageContainer = styled.div`
     width: 30%;
+    position: relative;
     overflow-y: scroll;
+`;
+
+const PageNavigationContainer = styled.div`
+    display: flex;
+    justify-content: space-between;
+    position: sticky;
+    bottom: 0;
+    font-size: 20px;
 `;
 
 const EmailSubjectContainer = styled.div`
@@ -23,13 +37,12 @@ const EmailSubjectContainer = styled.div`
     margin: 5px;
     border: 1px solid #656664;
     padding: 10px;
-    border-radius: 10px
+    border-radius: 10px;
 `;
 
 const SubjectLine = styled.p`
     margin: auto;
 `;
-
 
 export interface Email {
     id: string;
@@ -42,34 +55,24 @@ interface UserEmailsProps {
 
 export const UserEmails: React.FC<UserEmailsProps> = ({ user }: UserEmailsProps) => {
     const [emails, setEmails] = useState<Array<Email>>([]);
+    const [tokens, setTokens] = useState<Array<string>>([]);
+    const [currentPage, setCurrentPage] = useState<number>(0);
     const [emailSelected, setEmailSelected] = useState<any>(null);
 
+    async function getUserEmail(email: any) {
+        const response = await getEmail(email.id);
+        setEmails(e => [response.result, ...e])
+    }
 
     useEffect(() => {
-        function getEmail(email: any) {
-            var messageRequest = window.gapi.client.gmail.users.messages.get({
-                'userId': 'me',
-                'id': email.id
-            });
-            messageRequest.execute((emailData: any) => setEmails(e => [emailData, ...e]));
+        if (user) {
+            (async function callGetUserEmails() {
+                const response = await getUserEmails(10);
+                console.log("emails are ", response);
+                setTokens(currentTokens => [...currentTokens, response.result.nextPageToken]);
+                response.result.messages.forEach((email: any) => getUserEmail(email));
+            })();
         }
-
-        function getEmails(response: any) {
-            console.log("emails are ", response);
-            response.messages.forEach((email: any) => getEmail(email));
-        }
-
-        function loadEmails() {
-            const request = window.gapi.client.gmail.users.messages.list({
-                'userId': 'me',
-                'labelIds': 'INBOX',
-                'q': 'from:noreply@medium.com',
-                'maxResults': 10
-            });
-            request.execute(getEmails);
-        }
-        if (user)
-            window.gapi.client.load('gmail', 'v1', loadEmails);
     }, [user])
 
     const getEmailSubject = (email: any) => {
@@ -84,13 +87,38 @@ export const UserEmails: React.FC<UserEmailsProps> = ({ user }: UserEmailsProps)
         )
     }
 
+    const handleNextPageClick = async () => {
+        setEmails([]);
+        const response = await getUserEmails(10, tokens[tokens.length - 1]);
+        console.log("emails are ", response);
+        setTokens(currentTokens => [...currentTokens, response.result.nextPageToken]);
+        response.result.messages.forEach((email: any) => getUserEmail(email));
+        setCurrentPage(cp => cp + 1);
+    }
+
+    const handlePrevPageClick = async () => {
+        setEmails([]);
+        const response = await getUserEmails(10, tokens.length > 2 ? tokens[tokens.length - 3] : null);
+        console.log("emails are ", response);
+        setTokens(currentTokens => [...currentTokens.slice(0, -2), response.result.nextPageToken]);
+        response.result.messages.forEach((email: any) => getUserEmail(email));
+        setCurrentPage(cp => cp - 1);
+    }
+
     const renderEmailList = () => {
         return (
-            <EmailListContainer>
-                {
-                    emails.map(email => renderEmailHeader(email))
-                }
-            </EmailListContainer>
+            <EmailPageContainer>
+                <EmailListContainer>
+                    {
+                        emails.map(email => renderEmailHeader(email))
+                    }
+                </EmailListContainer>
+                {emails.length > 0 &&
+                    <PageNavigationContainer>
+                        {currentPage > 0 && <ArrowLeftOutlined onClick={handlePrevPageClick} />}
+                        {tokens.length > 0 && <ArrowRightOutlined onClick={handleNextPageClick} />}
+                    </PageNavigationContainer>}
+            </EmailPageContainer>
         )
     }
 
