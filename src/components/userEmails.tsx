@@ -14,6 +14,19 @@ const EmailsContainer = styled.div`
     height: 90vh;
 `;
 
+interface divProps {
+    readonly isSelected: boolean;
+}
+
+const EmailSubjectContainer = styled.div<divProps>`
+    cursor: pointer;
+    margin: 5px;
+    border: 1px solid #656664;
+    padding: 10px;
+    border-radius: 10px;
+    background-color: ${({ isSelected }) => (isSelected ? `aqua` : `white`)};
+`;
+
 const EmailListContainer = styled.div`
     margin: 10px;
 `;
@@ -30,14 +43,6 @@ const PageNavigationContainer = styled.div`
     position: sticky;
     bottom: 0;
     font-size: 20px;
-`;
-
-const EmailSubjectContainer = styled.div`
-    cursor: pointer;
-    margin: 5px;
-    border: 1px solid #656664;
-    padding: 10px;
-    border-radius: 10px;
 `;
 
 const SubjectLine = styled.p`
@@ -58,6 +63,7 @@ export const UserEmails: React.FC<UserEmailsProps> = ({ user }: UserEmailsProps)
     const [tokens, setTokens] = useState<Array<string>>([]);
     const [currentPage, setCurrentPage] = useState<number>(0);
     const [emailSelected, setEmailSelected] = useState<any>(null);
+    const [selectedEmailIndex, setSelectedEmailIndex] = useState<number>(-1);
 
     async function getUserEmail(email: any) {
         const response = await getEmail(email.id);
@@ -79,9 +85,15 @@ export const UserEmails: React.FC<UserEmailsProps> = ({ user }: UserEmailsProps)
         return email.payload.headers.filter((header: any) => header.name === "Subject")[0].value;
     }
 
-    const renderEmailHeader = (email: any) => {
+    useEffect(() => {
+        if (emailSelected && emails.length > 0) {
+            setSelectedEmailIndex(emails.findIndex(email => email.id === emailSelected.id));
+        }
+    }, [emailSelected, emails])
+
+    const renderEmailHeader = (email: any, index: number) => {
         return (
-            <EmailSubjectContainer key={email.id} onClick={() => setEmailSelected(email)}>
+            <EmailSubjectContainer isSelected={selectedEmailIndex === index} key={email.id} onClick={() => setEmailSelected(email)}>
                 <SubjectLine>{getEmailSubject(email)}</SubjectLine>
             </EmailSubjectContainer>
         )
@@ -89,6 +101,8 @@ export const UserEmails: React.FC<UserEmailsProps> = ({ user }: UserEmailsProps)
 
     const handleNextPageClick = async () => {
         setEmails([]);
+        setEmailSelected(null);
+        setSelectedEmailIndex(-1);
         const response = await getUserEmails(10, tokens[tokens.length - 1]);
         console.log("emails are ", response);
         setTokens(currentTokens => [...currentTokens, response.result.nextPageToken]);
@@ -98,6 +112,8 @@ export const UserEmails: React.FC<UserEmailsProps> = ({ user }: UserEmailsProps)
 
     const handlePrevPageClick = async () => {
         setEmails([]);
+        setEmailSelected(null);
+        setSelectedEmailIndex(-1);
         const response = await getUserEmails(10, tokens.length > 2 ? tokens[tokens.length - 3] : null);
         console.log("emails are ", response);
         setTokens(currentTokens => [...currentTokens.slice(0, -2), response.result.nextPageToken]);
@@ -110,7 +126,7 @@ export const UserEmails: React.FC<UserEmailsProps> = ({ user }: UserEmailsProps)
             <EmailPageContainer>
                 <EmailListContainer>
                     {
-                        emails.map(email => renderEmailHeader(email))
+                        emails.map((email, index) => renderEmailHeader(email, index))
                     }
                 </EmailListContainer>
                 {emails.length > 0 &&
