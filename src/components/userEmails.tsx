@@ -86,8 +86,10 @@ export const UserEmails: React.FC<UserEmailsProps> = ({ user }: UserEmailsProps)
     }
 
     useEffect(() => {
-        if (emailSelected && emails.length > 0) {
+        if (emailSelected) {
             setSelectedEmailIndex(emails.findIndex(email => email.id === emailSelected.id));
+        } else {
+            setSelectedEmailIndex(-1);
         }
     }, [emailSelected, emails])
 
@@ -102,7 +104,6 @@ export const UserEmails: React.FC<UserEmailsProps> = ({ user }: UserEmailsProps)
     const handleNextPageClick = async () => {
         setEmails([]);
         setEmailSelected(null);
-        setSelectedEmailIndex(-1);
         const response = await getUserEmails(10, tokens[tokens.length - 1]);
         console.log("emails are ", response);
         setTokens(currentTokens => [...currentTokens, response.result.nextPageToken]);
@@ -113,7 +114,6 @@ export const UserEmails: React.FC<UserEmailsProps> = ({ user }: UserEmailsProps)
     const handlePrevPageClick = async () => {
         setEmails([]);
         setEmailSelected(null);
-        setSelectedEmailIndex(-1);
         const response = await getUserEmails(10, tokens.length > 2 ? tokens[tokens.length - 3] : null);
         console.log("emails are ", response);
         setTokens(currentTokens => [...currentTokens.slice(0, -2), response.result.nextPageToken]);

@@ -40,7 +40,6 @@ const GoogleLoginContainer: React.FC<{}> = () => {
             window.gapi.load('client:auth2', async () => {
                 await window.gapi.client.init({
                     clientId: "891866724637-rqhpb7cep2ntkhenomcau08dcob1ltqf.apps.googleusercontent.com",
-                    apiKey: "AIzaSyBzXvWyN7N8dxJcnw-82JP5tUZRN-pPHQs",
                     'scope': 'profile email https://www.googleapis.com/auth/gmail.readonly'
                 });
                 const auth = window.gapi.auth2.getAuthInstance();
