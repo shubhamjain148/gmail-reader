@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { UserEmails } from './userEmails';
+import styled from 'styled-components';
+
+const LoginContainer = styled.div`
+    width: 100%;
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    margin: 10px;
+    height: 10vh;
+`;
 
 declare const window: any;
 
@@ -35,8 +45,8 @@ const GoogleLoginContainer: React.FC<{}> = () => {
                 });
                 const auth = window.gapi.auth2.getAuthInstance();
                 setGoogleAuth(auth);
-                auth.isSignedIn.listen(setIsSignedIn);
                 setIsSignedIn(auth.isSignedIn.get());
+                auth.isSignedIn.listen(setIsSignedIn);
             })
         })();
     }, [])
@@ -66,8 +76,24 @@ const GoogleLoginContainer: React.FC<{}> = () => {
         }
     }
 
+    const renderUserEmails = () => {
+        return <UserEmails user={user} />;
+    }
+
+    const renderLoginContainer = () => {
+        return (
+            <LoginContainer>
+                {!isSignedIn && <div id="mySignIn"></div>}
+                {isSignedIn && user && <div onClick={signOut}>{`${user?.getBasicProfile().getName()} is Signed in`}</div>}
+            </LoginContainer>
+        )
+    }
+
     return (
-        isSignedIn ? <> <UserEmails user={user} /> <div onClick={signOut}>{`${user?.getBasicProfile().getName()} is Signed in`}</div></> : <div id="mySignIn"></div>
+        <>
+            {renderLoginContainer()}
+            {isSignedIn && renderUserEmails()}
+        </>
     );
 }
 
